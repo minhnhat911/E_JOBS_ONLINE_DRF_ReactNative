@@ -1,0 +1,203 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block title %}
+Báo cáo & Thống kê hệ thống | E-JOBS
+{% endblock %}
+
+{% block content %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<h1 class="page-title">📊 Báo cáo & Thống kê hệ thống E-JOBS</h1>
+
+<form method="get">
+    <label><strong>Chọn năm thống kê:</strong></label>
+
+    <select name="year" onchange="this.form.submit()" class="year-select">
+        {% for y in years %}
+            <option value="{{ y }}"
+                {% if y == selected_year %}selected{% endif %}>
+                {{ y }}
+            </option>
+        {% endfor %}
+    </select>
+</form>
+
+
+<!-- ===== KPI ===== -->
+<div class="dashboard">
+    <div class="dashboard-card blue">
+        <span>Tổng tin tuyển dụng</span>
+        <strong>{{ total_jobs }}</strong>
+    </div>
+
+    <div class="dashboard-card orange">
+        <span>Tổng ứng viên</span>
+        <strong>{{ total_candidates }}</strong>
+    </div>
+
+    <div class="dashboard-card green">
+        <span>Hồ sơ ứng tuyển</span>
+        <strong>{{ total_applications }}</strong>
+    </div>
+</div>
+
+<hr>
+
+<!-- ===== BIỂU ĐỒ ===== -->
+<div class="charts">
+    <div class="chart-box">
+        <canvas id="jobsChart"></canvas>
+    </div>
+
+    <div class="chart-box">
+        <canvas id="revenueChart"></canvas>
+    </div>
+</div>
+
+<hr>
+
+<div class="tables">
+    <section>
+        <h2>📅 Tin tuyển dụng theo tháng ({{ selected_year }})</h2>
+        <table class="admin-table">
+            <tr><th>Tháng</th><th>Số tin</th></tr>
+            {% for item in jobs_by_month %}
+            <tr>
+                <td>{{ item.month|date:"m/Y" }}</td>
+                <td>{{ item.total }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="2">Không có dữ liệu</td></tr>
+            {% endfor %}
+        </table>
+    </section>
+
+    <section>
+        <h2>💰 Doanh thu theo tháng ({{ selected_year }})</h2>
+        <table class="admin-table">
+            <tr><th>Tháng</th><th>Doanh thu (VNĐ)</th></tr>
+            {% for item in revenue_by_month %}
+            <tr>
+                <td>{{ item.month|date:"m/Y" }}</td>
+                <td class="money">{{ item.total|floatformat:0 }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="2">Không có dữ liệu</td></tr>
+            {% endfor %}
+        </table>
+    </section>
+</div>
+
+<section style="margin-top: 30px;">
+    <h2>📈 Doanh thu theo năm</h2>
+    <table class="admin-table small">
+        <tr><th>Năm</th><th>Tổng doanh thu</th></tr>
+        {% for item in revenue_by_year %}
+        <tr>
+            <td>{{ item.year|date:"Y" }}</td>
+            <td class="money">{{ item.total|floatformat:0 }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+</section>
+
+
+<style>
+.page-title { margin-bottom: 20px; }
+
+.year-select {
+    padding: 6px 10px;
+    border-radius: 4px;
+}
+
+.dashboard {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 30px;
+}
+.dashboard-card {
+    flex: 1;
+    background: #fff;
+    padding: 20px;
+    border-left: 5px solid;
+    box-shadow: 0 2px 4px rgba(0,0,0,.05);
+}
+.dashboard-card strong {
+    display: block;
+    font-size: 26px;
+    margin-top: 5px;
+}
+.blue { border-color: #3498db; }
+.orange { border-color: #e67e22; }
+.green { border-color: #2ecc71; }
+
+.charts {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 30px;
+}
+.chart-box {
+    flex: 1;
+    background: #fff;
+    padding: 20px;
+    height: 350px;
+    border: 1px solid #eee;
+}
+
+.tables {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 30px;
+}
+
+.admin-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.admin-table th, .admin-table td {
+    border: 1px solid #eaeaea;
+    padding: 10px;
+}
+.admin-table th {
+    background: #f5f5f5;
+}
+.admin-table.small {
+    max-width: 450px;
+}
+.money {
+    color: #27ae60;
+    font-weight: bold;
+}
+</style>
+
+<!-- ===== SCRIPT ===== -->
+<script>
+new Chart(jobsChart, {
+    type: 'line',
+    data: {
+        labels: [{% for i in jobs_by_month %}"{{ i.month|date:'m/Y' }}",{% endfor %}],
+        datasets: [{
+            label: 'Tin tuyển dụng',
+            data: [{% for i in jobs_by_month %}{{ i.total }},{% endfor %}],
+            borderColor: '#3498db',
+            fill: true,
+            tension: .4
+        }]
+    }
+});
+
+new Chart(revenueChart, {
+    type: 'bar',
+    data: {
+        labels: [{% for i in revenue_by_month %}"{{ i.month|date:'m/Y' }}",{% endfor %}],
+        datasets: [{
+            label: 'Doanh thu',
+            data: [{% for i in revenue_by_month %}{{ i.total }},{% endfor %}],
+            backgroundColor: '#2ecc71'
+        }]
+    }
+});
+</script>
+
+{% endblock %}
